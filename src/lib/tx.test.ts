@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyKeypadKey, createTx } from './tx';
+import { applyKeypadKey, createTx, updateTx } from './tx';
 
 describe('applyKeypadKey', () => {
   it('membangun string digit integer tanpa nol di depan dan maksimal 12 digit', () => {
@@ -53,5 +53,74 @@ describe('createTx', () => {
     expect(createTx({ ...base, accountId: '' })).toBeNull();
     expect(createTx({ ...base, categoryId: '' })).toBeNull();
     expect(createTx({ ...base, date: '2026-02-31' })).toBeNull();
+  });
+});
+
+describe('updateTx', () => {
+  it('memperbarui transaksi dengan mempertahankan id dan createdAt', () => {
+    const existing = {
+      id: 'tx-1',
+      kind: 'out' as const,
+      amount: 25000,
+      accountId: 'acc-bca',
+      categoryId: 'cat-out-1',
+      note: 'Lama',
+      date: '2026-11-20',
+      createdAt: 1700000000000,
+    };
+
+    const updated = updateTx(existing, {
+      kind: 'in',
+      amount: 50000,
+      accountId: 'acc-dana',
+      categoryId: 'cat-in-1',
+      note: '  Baru  ',
+      date: '2026-11-22',
+    });
+
+    expect(updated).toEqual({
+      id: 'tx-1',
+      kind: 'in',
+      amount: 50000,
+      accountId: 'acc-dana',
+      categoryId: 'cat-in-1',
+      note: 'Baru',
+      date: '2026-11-22',
+      createdAt: 1700000000000,
+    });
+  });
+
+  it('menolak pembaruan dengan input invalid', () => {
+    const existing = {
+      id: 'tx-1',
+      kind: 'out' as const,
+      amount: 25000,
+      accountId: 'acc-bca',
+      categoryId: 'cat-out-1',
+      note: '',
+      date: '2026-11-20',
+      createdAt: 100,
+    };
+
+    expect(
+      updateTx(existing, {
+        kind: 'out',
+        amount: 0,
+        accountId: 'acc-bca',
+        categoryId: 'cat-out-1',
+        note: '',
+        date: '2026-11-20',
+      }),
+    ).toBeNull();
+    expect(
+      updateTx(existing, {
+        kind: 'out',
+        amount: 10000,
+        accountId: 'acc-bca',
+        categoryId: 'cat-out-1',
+        note: '',
+        date: '2026-02-30',
+      }),
+    ).toBeNull();
   });
 });

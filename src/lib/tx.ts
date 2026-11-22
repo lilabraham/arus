@@ -21,10 +21,18 @@ export interface NewTxInput {
   date: string;
 }
 
+function isValidTxInput(input: NewTxInput): boolean {
+  return (
+    Number.isSafeInteger(input.amount) &&
+    input.amount > 0 &&
+    Boolean(input.accountId) &&
+    Boolean(input.categoryId) &&
+    isValidDateStr(input.date)
+  );
+}
+
 export function createTx(input: NewTxInput, now: Date = new Date()): Tx | null {
-  if (!Number.isSafeInteger(input.amount) || input.amount <= 0) return null;
-  if (!input.accountId || !input.categoryId) return null;
-  if (!isValidDateStr(input.date)) return null;
+  if (!isValidTxInput(input)) return null;
 
   return {
     id: crypto.randomUUID(),
@@ -35,5 +43,20 @@ export function createTx(input: NewTxInput, now: Date = new Date()): Tx | null {
     note: input.note.trim(),
     date: input.date,
     createdAt: now.getTime(),
+  };
+}
+
+export function updateTx(existing: Tx, input: NewTxInput): Tx | null {
+  if (!isValidTxInput(input)) return null;
+
+  return {
+    id: existing.id,
+    kind: input.kind,
+    amount: input.amount,
+    accountId: input.accountId,
+    categoryId: input.categoryId,
+    note: input.note.trim(),
+    date: input.date,
+    createdAt: existing.createdAt,
   };
 }

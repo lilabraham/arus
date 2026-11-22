@@ -8,7 +8,7 @@ import {
 } from '../lib/category';
 import { isValidDateStr, todayLocal } from '../lib/date';
 import { formatRp } from '../lib/money';
-import { applyKeypadKey, createTx, type KeypadKey } from '../lib/tx';
+import { applyKeypadKey, createTx, updateTx, type KeypadKey } from '../lib/tx';
 import type { Category, CategoryKind, Db, Id, Tx } from '../lib/types';
 import { Icon } from './Icon';
 import { Keypad } from './Keypad';
@@ -17,7 +17,9 @@ import './TxSheet.css';
 interface TxSheetProps {
   db: Db;
   initialKind?: CategoryKind;
+  editingTx?: Tx;
   onSave: (tx: Tx) => void;
+  onDelete?: (id: Id) => void;
   onClose: () => void;
 }
 
@@ -35,23 +37,36 @@ function pickInitialAccount(db: Db): Id {
   return active[0]?.id ?? '';
 }
 
-export function TxSheet({ db, initialKind = 'out', onSave, onClose }: TxSheetProps) {
+export function TxSheet({
+  db,
+  initialKind = 'out',
+  editingTx,
+  onSave,
+  onDelete,
+  onClose,
+}: TxSheetProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const [kind, setKind] = useState<CategoryKind>(initialKind);
-  const [digits, setDigits] = useState('');
-  const [categoryId, setCategoryId] = useState<Id>(() => pickInitialCategory(db, initialKind));
-  const [accountId, setAccountId] = useState<Id>(() => pickInitialAccount(db));
-  const [date, setDate] = useState(() => todayLocal());
-  const [note, setNote] = useState('');
+  const startKind: CategoryKind = editingTx ? (editingTx.kind === 'in' ? 'in' : 'out') : initialKind;
+  const [kind, setKind] = useState<CategoryKind>(startKind);
+  const [digits, setDigits] = useState(() => (editingTx ? String(editingTx.amount) : ''));
+  const [categoryId, setCategoryId] = useState<Id>(
+    () => editingTx?.categoryId ?? pickInitialCategory(db, startKind),
+  );
+  const [accountId, setAccountId] = useState<Id>(
+    () => editingTx?.accountId ?? pickInitialAccount(db),
+  );
+  const [date, setDate] = useState(() => editingTx?.date ?? todayLocal());
+  const [note, setNote] = useState(() => editingTx?.note ?? '');
   const [pickingCategory, setPickingCategory] = useState(false);
   const [search, setSearch] = useState('');
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   useEffect(() => {
     const el = dialogRef.current;
     if (el && !el.open) el.showModal();
   }, []);
 
-  const activeAccounts = db.accounts.filter((a) => !a.archived);
+  const accountOptions = db.accounts.filter((a) => !a.archived || a.id === accountId);
   const activeForKind = db.categories.filter((c) => !c.archived && c.kind === kind);
   const allGroups = categoryGroups(db.categories, kind);
 
@@ -67,7 +82,8 @@ export function TxSheet({ db, initialKind = 'out', onSave, onClose }: TxSheetPro
     if (!quickCats.some((q) => q.id === cat.id)) quickCats.push(cat);
   }
 
-  const selectedCat = activeForKind.find((c) => c.id === categoryId) ?? activeForKind[0];
+  const selectedCat =
+    db.categories.find((c) => c.id === categoryId && c.kind === kind) ?? activeForKind[0];
   const amount = digits ? Number(digits) : 0;
   const canSubmit = amount > 0 && Boolean(selectedCat) && Boolean(accountId) && isValidDateStr(date);
 
@@ -80,37 +96,44 @@ export function TxSheet({ db, initialKind = 'out', onSave, onClose }: TxSheetPro
   function switchKind(next: CategoryKind) {
     if (next === kind) return;
     setKind(next);
-    setCategoryId(pickInitialCategory(db, next));
+    const nextCat =
+      editingTx && editingTx.kind === next && editingTx.categoryId
+        ? editingTx.categoryId
+        : pickInitialCategory(db, next);
+    setCategoryId(nextCat);
     setSearch('');
+    setConfirmDelete(false);
   }
 
   function handleKeypad(key: KeypadKey) {
+    setConfirmDelete(false);
     setDigits((prev) => applyKeypadKey(prev, key));
   }
 
   function handleSubmit() {
     if (!selectedCat) return;
-    const tx = createTx({
+    const input = {
       kind,
       amount,
       accountId,
       categoryId: selectedCat.id,
       note,
       date,
-    });
+    };
+    const tx = editingTx ? updateTx(editingTx, input) : createTx(input);
     if (tx) onSave(tx);
   }
 
   function handleDialogKeyDown(e: React.KeyboardEvent<HTMLDialogElement>) {
     const tag = (e.target as HTMLElement).tagName;
     if (tag === 'INPUT' || tag === 'SELECT') {
-      if (e.key === 'Enter' && tag === 'INPUT' && !pickingCategory && canSubmit) {
+      if (e.key === 'Enter' && tag === 'INPUT' && !pickingCategory && !confirmDelete && canSubmit) {
         e.preventDefault();
         handleSubmit();
       }
       return;
     }
-    if (pickingCategory) return;
+    if (pickingCategory || confirmDelete) return;
 
     if (e.key >= '0' && e.key <= '9') {
       e.preventDefault();
@@ -145,7 +168,7 @@ export function TxSheet({ db, initialKind = 'out', onSave, onClose }: TxSheetPro
     <dialog
       ref={dialogRef}
       className="sheet"
-      aria-label="Catat transaksi"
+      aria-label={editingTx ? 'Ubah transaksi' : 'Catat transaksi'}
       onCancel={(e) => {
         e.preventDefault();
         onClose();
@@ -274,7 +297,7 @@ export function TxSheet({ db, initialKind = 'out', onSave, onClose }: TxSheetPro
                 onChange={(e) => setAccountId(e.target.value)}
                 aria-label="Rekening"
               >
-                {activeAccounts.map((acc) => (
+                {accountOptions.map((acc) => (
                   <option key={acc.id} value={acc.id}>
                     {acc.name}
                   </option>
@@ -323,14 +346,60 @@ export function TxSheet({ db, initialKind = 'out', onSave, onClose }: TxSheetPro
 
             <Keypad onKey={handleKeypad} />
 
-            <button
-              type="button"
-              className="sheet__submit"
-              disabled={!canSubmit}
-              onClick={handleSubmit}
-            >
-              Simpan
-            </button>
+            {editingTx && onDelete ? (
+              confirmDelete ? (
+                <div
+                  className="sheet__confirm"
+                  role="alertdialog"
+                  aria-label="Konfirmasi hapus transaksi"
+                >
+                  <span className="sheet__confirm-text">Hapus transaksi ini?</span>
+                  <div className="sheet__confirm-actions">
+                    <button
+                      type="button"
+                      className="sheet__cancel-btn"
+                      onClick={() => setConfirmDelete(false)}
+                    >
+                      Batal
+                    </button>
+                    <button
+                      type="button"
+                      className="sheet__danger-btn"
+                      onClick={() => onDelete(editingTx.id)}
+                    >
+                      Ya, hapus
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="sheet__actions">
+                  <button
+                    type="button"
+                    className="sheet__delete-btn"
+                    onClick={() => setConfirmDelete(true)}
+                  >
+                    Hapus
+                  </button>
+                  <button
+                    type="button"
+                    className="sheet__submit"
+                    disabled={!canSubmit}
+                    onClick={handleSubmit}
+                  >
+                    Simpan perubahan
+                  </button>
+                </div>
+              )
+            ) : (
+              <button
+                type="button"
+                className="sheet__submit"
+                disabled={!canSubmit}
+                onClick={handleSubmit}
+              >
+                Simpan
+              </button>
+            )}
           </>
         )}
       </div>

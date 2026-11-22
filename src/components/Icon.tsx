@@ -15,7 +15,9 @@ export type IconName =
   | 'eyeOff'
   | 'out'
   | 'in'
-  | 'transfer';
+  | 'transfer'
+  | 'chevronLeft'
+  | 'chevronRight';
 
 const PATHS: Record<IconName, string> = {
   beranda: 'M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',
@@ -36,6 +38,8 @@ const PATHS: Record<IconName, string> = {
   out: 'M7 17L17 7M9 7h8v8',
   in: 'M17 7L7 17M15 17H7V9',
   transfer: 'M4 8h16M16 4l4 4-4 4M20 16H4M8 12l-4 4 4 4',
+  chevronLeft: 'M15 18l-6-6 6-6',
+  chevronRight: 'M9 18l6-6-6-6',
 };
 
 export function Icon({ name }: { name: IconName }) {

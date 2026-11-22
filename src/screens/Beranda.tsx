@@ -1,6 +1,6 @@
 import { Icon } from '../components/Icon';
-import { categoryGroups, groupColorToken, monogram } from '../lib/category';
-import { formatShortDate } from '../lib/date';
+import { TxRow } from '../components/TxRow';
+import { categoryGroups } from '../lib/category';
 import {
   ACCOUNT_TYPE_LABEL,
   accountBalance,
@@ -9,7 +9,7 @@ import {
   totalBalance,
 } from '../lib/ledger';
 import { formatRp, formatRpCompact, MASKED_RP } from '../lib/money';
-import type { CategoryKind, Db } from '../lib/types';
+import type { CategoryKind, Db, Tx } from '../lib/types';
 import './Beranda.css';
 
 interface BerandaProps {
@@ -17,9 +17,10 @@ interface BerandaProps {
   lastSavedId: string | null;
   onToggleHide: () => void;
   onQuickAdd: (kind: CategoryKind) => void;
+  onSelectTx: (tx: Tx) => void;
 }
 
-export function Beranda({ db, lastSavedId, onToggleHide, onQuickAdd }: BerandaProps) {
+export function Beranda({ db, lastSavedId, onToggleHide, onQuickAdd, onSelectTx }: BerandaProps) {
   const hide = db.prefs.hideBalance;
   const total = totalBalance(db.accounts, db.txs);
   const activeAccounts = db.accounts.filter((a) => !a.archived);
@@ -136,53 +137,20 @@ export function Beranda({ db, lastSavedId, onToggleHide, onQuickAdd }: BerandaPr
             </div>
           ) : (
             <ul className="tx-list">
-              {latest.map((tx) => {
-                const cat = tx.categoryId ? categoryById.get(tx.categoryId) : undefined;
-                const acc = accountById.get(tx.accountId);
-                const toAcc = tx.toAccountId ? accountById.get(tx.toAccountId) : undefined;
-                const groups = tx.kind === 'in' ? inGroups : outGroups;
-
-                const title =
-                  tx.kind === 'transfer'
-                    ? `Transfer → ${toAcc?.name ?? 'Rekening'}`
-                    : (cat?.name ?? 'Transaksi');
-                const meta = [formatShortDate(tx.date), acc?.name, tx.note]
-                  .filter(Boolean)
-                  .join(' · ');
-                const code = tx.kind === 'in' ? 'CR' : tx.kind === 'out' ? 'DB' : 'TR';
-                const sign = tx.kind === 'in' ? '+' : tx.kind === 'out' ? '−' : '';
-                const badgeColor =
-                  tx.kind === 'transfer'
-                    ? 'var(--brand)'
-                    : cat
-                      ? groupColorToken(cat.group, groups)
-                      : 'var(--cat-8)';
-                const amountTone =
-                  tx.kind === 'in'
-                    ? ' tx-row__amount--in'
-                    : tx.kind === 'out'
-                      ? ' tx-row__amount--out'
-                      : '';
-
-                return (
-                  <li
-                    key={tx.id}
-                    className={`tx-row${lastSavedId === tx.id ? ' tx-row--new' : ''}`}
-                  >
-                    <span className="cat-badge" style={{ background: badgeColor }}>
-                      {tx.kind === 'transfer' ? 'TR' : monogram(cat?.name ?? 'TX')}
-                    </span>
-                    <div className="tx-row__info">
-                      <span className="tx-row__title">{title}</span>
-                      <span className="tx-row__meta num">{meta}</span>
-                    </div>
-                    <div className={`tx-row__amount num${amountTone}`}>
-                      <span>{hide ? MASKED_RP : `${sign}${formatRp(tx.amount)}`}</span>
-                      <span className="tx-row__code">{code}</span>
-                    </div>
-                  </li>
-                );
-              })}
+              {latest.map((tx) => (
+                <TxRow
+                  key={tx.id}
+                  tx={tx}
+                  category={tx.categoryId ? categoryById.get(tx.categoryId) : undefined}
+                  account={accountById.get(tx.accountId)}
+                  toAccount={tx.toAccountId ? accountById.get(tx.toAccountId) : undefined}
+                  groups={tx.kind === 'in' ? inGroups : outGroups}
+                  hide={hide}
+                  isNew={lastSavedId === tx.id}
+                  showDate
+                  onSelect={onSelectTx}
+                />
+              ))}
             </ul>
           )}
         </section>

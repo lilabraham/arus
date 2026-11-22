@@ -5,8 +5,11 @@ import { greeting } from './lib/date';
 import { parseRoute, type Route } from './lib/route';
 import { getDb, subscribeDb, updateDb } from './lib/store';
 import { getTheme, nextTheme, setTheme, subscribeTheme, type Theme } from './lib/theme';
-import type { CategoryKind, Tx } from './lib/types';
+import type { CategoryKind, Id, Tx } from './lib/types';
 import { Beranda } from './screens/Beranda';
+import { Mutasi } from './screens/Mutasi';
+
+type SheetState = { mode: 'new'; kind: CategoryKind } | { mode: 'edit'; tx: Tx };
 
 const THEME_META: Record<Theme, { label: string; icon: IconName }> = {
   system: { label: 'Sistem', icon: 'system' },
@@ -14,23 +17,17 @@ const THEME_META: Record<Theme, { label: string; icon: IconName }> = {
   dark: { label: 'Gelap', icon: 'moon' },
 };
 
-const PLACEHOLDER_SCREENS: Record<Exclude<Route, 'beranda'>, { title: string; subtitle: string }> = {
-  mutasi: {
-    title: 'Mutasi',
-    subtitle: 'Daftar transaksi bulanan bergaya rekening koran akan tampil di sini.',
-  },
-  laporan: {
-    title: 'Laporan',
-    subtitle: 'Ringkasan masuk, keluar, selisih, dan distribusi kategori akan tampil di sini.',
-  },
-  anggaran: {
-    title: 'Anggaran',
-    subtitle: 'Batas pengeluaran bulanan per kelompok dan kategori akan tampil di sini.',
-  },
-  atur: {
-    title: 'Atur',
-    subtitle: 'Pengelolaan rekening, kategori, dan backup data akan tampil di sini.',
-  },
+const SCREEN_TITLES: Record<Exclude<Route, 'beranda'>, string> = {
+  mutasi: 'Mutasi',
+  laporan: 'Laporan',
+  anggaran: 'Anggaran',
+  atur: 'Atur',
+};
+
+const PLACEHOLDER_DESC: Record<Exclude<Route, 'beranda' | 'mutasi'>, string> = {
+  laporan: 'Ringkasan masuk, keluar, selisih, dan distribusi kategori akan tampil di sini.',
+  anggaran: 'Batas pengeluaran bulanan per kelompok dan kategori akan tampil di sini.',
+  atur: 'Pengelolaan rekening, kategori, dan backup data akan tampil di sini.',
 };
 
 function subscribeHash(cb: () => void) {
@@ -46,7 +43,7 @@ export function App() {
   const route = parseRoute(useSyncExternalStore(subscribeHash, getHash));
   const theme = useSyncExternalStore(subscribeTheme, getTheme);
   const db = useSyncExternalStore(subscribeDb, getDb);
-  const [sheetKind, setSheetKind] = useState<CategoryKind | null>(null);
+  const [sheet, setSheet] = useState<SheetState | null>(null);
   const [lastSavedId, setLastSavedId] = useState<string | null>(null);
 
   const themeMeta = THEME_META[theme];
@@ -64,12 +61,27 @@ export function App() {
   }
 
   function handleSaveTx(tx: Tx) {
-    updateDb((prev) => ({ ...prev, txs: [tx, ...prev.txs] }));
-    setSheetKind(null);
+    updateDb((prev) => ({
+      ...prev,
+      txs: prev.txs.some((t) => t.id === tx.id)
+        ? prev.txs.map((t) => (t.id === tx.id ? tx : t))
+        : [tx, ...prev.txs],
+    }));
+    setSheet(null);
     setLastSavedId(tx.id);
     window.setTimeout(() => {
       setLastSavedId((curr) => (curr === tx.id ? null : curr));
     }, 1400);
+  }
+
+  function handleDeleteTx(id: Id) {
+    updateDb((prev) => ({ ...prev, txs: prev.txs.filter((t) => t.id !== id) }));
+    setSheet(null);
+  }
+
+  function handleSelectTx(tx: Tx) {
+    if (tx.kind === 'transfer') return;
+    setSheet({ mode: 'edit', tx });
   }
 
   return (
@@ -101,7 +113,7 @@ export function App() {
         </div>
 
         {route !== 'beranda' && (
-          <h1 className="shell-header__title">{PLACEHOLDER_SCREENS[route].title}</h1>
+          <h1 className="shell-header__title">{SCREEN_TITLES[route]}</h1>
         )}
       </header>
 
@@ -111,12 +123,20 @@ export function App() {
             db={db}
             lastSavedId={lastSavedId}
             onToggleHide={handleToggleHide}
-            onQuickAdd={(kind) => setSheetKind(kind)}
+            onQuickAdd={(kind) => setSheet({ mode: 'new', kind })}
+            onSelectTx={handleSelectTx}
+          />
+        ) : route === 'mutasi' ? (
+          <Mutasi
+            db={db}
+            lastSavedId={lastSavedId}
+            onSelectTx={handleSelectTx}
+            onQuickAdd={() => setSheet({ mode: 'new', kind: 'out' })}
           />
         ) : (
-          <section className="empty-card" aria-label={PLACEHOLDER_SCREENS[route].title}>
-            <h2 className="empty-card__title">{PLACEHOLDER_SCREENS[route].title}</h2>
-            <p className="empty-card__desc">{PLACEHOLDER_SCREENS[route].subtitle}</p>
+          <section className="empty-card" aria-label={SCREEN_TITLES[route]}>
+            <h2 className="empty-card__title">{SCREEN_TITLES[route]}</h2>
+            <p className="empty-card__desc">{PLACEHOLDER_DESC[route]}</p>
           </section>
         )}
       </main>
@@ -142,7 +162,7 @@ export function App() {
           type="button"
           className="bottom-nav__add"
           aria-label="Catat transaksi"
-          onClick={() => setSheetKind('out')}
+          onClick={() => setSheet({ mode: 'new', kind: 'out' })}
         >
           <Icon name="plus" />
         </button>
@@ -164,12 +184,15 @@ export function App() {
         </a>
       </nav>
 
-      {sheetKind && (
+      {sheet && (
         <TxSheet
+          key={sheet.mode === 'edit' ? sheet.tx.id : sheet.kind}
           db={db}
-          initialKind={sheetKind}
+          initialKind={sheet.mode === 'new' ? sheet.kind : undefined}
+          editingTx={sheet.mode === 'edit' ? sheet.tx : undefined}
           onSave={handleSaveTx}
-          onClose={() => setSheetKind(null)}
+          onDelete={handleDeleteTx}
+          onClose={() => setSheet(null)}
         />
       )}
     </div>

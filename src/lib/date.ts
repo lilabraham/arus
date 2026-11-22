@@ -1,11 +1,31 @@
 const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
+const MONTH_RE = /^(\d{4})-(\d{2})$/;
 const shortDateFmt = new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short' });
+const dayHeadingFmt = new Intl.DateTimeFormat('id-ID', {
+  weekday: 'short',
+  day: 'numeric',
+  month: 'short',
+});
+const monthFmt = new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' });
 
 export function todayLocal(now: Date = new Date()): string {
   const y = now.getFullYear();
   const m = String(now.getMonth() + 1).padStart(2, '0');
   const d = String(now.getDate()).padStart(2, '0');
   return `${y}-${m}-${d}`;
+}
+
+export function currentMonth(now: Date = new Date()): string {
+  return todayLocal(now).slice(0, 7);
+}
+
+export function shiftMonth(month: string, delta: number): string {
+  const match = MONTH_RE.exec(month);
+  if (!match) return month;
+  const total = Number(match[1]) * 12 + (Number(match[2]) - 1) + delta;
+  const year = Math.floor(total / 12);
+  const mon = ((total % 12) + 12) % 12;
+  return `${String(year).padStart(4, '0')}-${String(mon + 1).padStart(2, '0')}`;
 }
 
 export function isValidDateStr(value: string): boolean {
@@ -24,6 +44,18 @@ export function formatShortDate(dateStr: string): string {
   const match = DATE_RE.exec(dateStr);
   if (!match) return dateStr;
   return shortDateFmt.format(new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
+}
+
+export function formatDayHeading(dateStr: string): string {
+  const match = DATE_RE.exec(dateStr);
+  if (!match) return dateStr;
+  return dayHeadingFmt.format(new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
+}
+
+export function formatMonth(month: string): string {
+  const match = MONTH_RE.exec(month);
+  if (!match) return month;
+  return monthFmt.format(new Date(Number(match[1]), Number(match[2]) - 1, 1));
 }
 
 export function greeting(now: Date = new Date()): string {

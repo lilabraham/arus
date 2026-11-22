@@ -185,10 +185,6 @@ a {
 }
 
 .tx-row {
-  display: flex;
-  align-items: center;
-  gap: var(--s-3);
-  padding: var(--s-3) var(--s-4);
   border-bottom: 1px solid var(--line);
   transition: background 200ms ease-out;
 }
@@ -199,6 +195,27 @@ a {
 
 .tx-row--new {
   background: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.tx-row__btn {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  width: 100%;
+  min-height: calc(var(--s-6) * 2);
+  padding: var(--s-3) var(--s-4);
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tx-row__btn:active {
+  background: var(--bg);
+}
+
+.tx-row__btn:focus-visible {
+  outline-offset: -2px;
 }
 
 .tx-row__info {
