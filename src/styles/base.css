@@ -51,6 +51,19 @@ a {
   font-variant-numeric: tabular-nums;
 }
 
+.cat-badge {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--s-6);
+  height: var(--s-6);
+  border-radius: var(--r-sm);
+  color: var(--brand-ink);
+  font-size: var(--step--1);
+  font-weight: 700;
+}
+
 /* Shell mobile-first */
 .shell {
   max-width: 480px;
@@ -142,6 +155,92 @@ a {
   margin: 0;
   font-size: var(--step--1);
   color: var(--ink-2);
+}
+
+/* Daftar transaksi ringkas */
+.tx-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.tx-section__title {
+  margin: 0;
+  font-size: var(--step--1);
+  font-weight: 700;
+  color: var(--ink-2);
+}
+
+.tx-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+.tx-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-3) var(--s-4);
+  border-bottom: 1px solid var(--line);
+  transition: background 200ms ease-out;
+}
+
+.tx-row:last-child {
+  border-bottom: 0;
+}
+
+.tx-row--new {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.tx-row__info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.tx-row__title {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tx-row__meta {
+  font-size: var(--step--1);
+  color: var(--ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tx-row__amount {
+  text-align: right;
+  font-weight: 700;
+  white-space: nowrap;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.tx-row__code {
+  font-size: var(--step--1);
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.tx-row__amount--out {
+  color: var(--out);
+}
+
+.tx-row__amount--in {
+  color: var(--in);
 }
 
 /* Navigasi bawah */

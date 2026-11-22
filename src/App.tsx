@@ -1,7 +1,12 @@
-import { useSyncExternalStore } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import { Icon, type IconName } from './components/Icon';
+import { TxSheet } from './components/TxSheet';
+import { groupColorToken, monogram } from './lib/category';
+import { formatRp } from './lib/money';
 import { parseRoute, type Route } from './lib/route';
+import { getDb, subscribeDb, updateDb } from './lib/store';
 import { getTheme, nextTheme, setTheme, subscribeTheme, type Theme } from './lib/theme';
+import type { Tx } from './lib/types';
 
 const THEME_META: Record<Theme, { label: string; icon: IconName }> = {
   system: { label: 'Sistem', icon: 'system' },
@@ -12,7 +17,7 @@ const THEME_META: Record<Theme, { label: string; icon: IconName }> = {
 const SCREENS: Record<Route, { title: string; subtitle: string }> = {
   beranda: {
     title: 'Beranda',
-    subtitle: 'Ringkasan saldo, rekening, dan mutasi terakhir akan tampil di sini.',
+    subtitle: 'Belum ada transaksi. Ketuk tombol + di bawah untuk mencatat transaksi pertama.',
   },
   mutasi: {
     title: 'Mutasi',
@@ -44,6 +49,10 @@ function getHash() {
 export function App() {
   const route = parseRoute(useSyncExternalStore(subscribeHash, getHash));
   const theme = useSyncExternalStore(subscribeTheme, getTheme);
+  const db = useSyncExternalStore(subscribeDb, getDb);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [lastSavedId, setLastSavedId] = useState<string | null>(null);
+
   const screen = SCREENS[route];
   const themeMeta = THEME_META[theme];
 
@@ -51,6 +60,21 @@ export function App() {
     const systemIsDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     setTheme(nextTheme(theme, systemIsDark));
   }
+
+  function handleSaveTx(tx: Tx) {
+    updateDb((prev) => ({ ...prev, txs: [tx, ...prev.txs] }));
+    setSheetOpen(false);
+    setLastSavedId(tx.id);
+    window.setTimeout(() => {
+      setLastSavedId((curr) => (curr === tx.id ? null : curr));
+    }, 1400);
+  }
+
+  const accountById = new Map(db.accounts.map((a) => [a.id, a]));
+  const categoryById = new Map(db.categories.map((c) => [c.id, c]));
+  const outGroups = Array.from(new Set(db.categories.filter((c) => c.kind === 'out').map((c) => c.group)));
+  const inGroups = Array.from(new Set(db.categories.filter((c) => c.kind === 'in').map((c) => c.group)));
+  const recentTxs = [...db.txs].sort((a, b) => b.createdAt - a.createdAt);
 
   return (
     <div className="shell">
@@ -79,10 +103,57 @@ export function App() {
       </header>
 
       <main className="shell-main">
-        <section className="empty-card" aria-label={screen.title}>
-          <h2 className="empty-card__title">{screen.title}</h2>
-          <p className="empty-card__desc">{screen.subtitle}</p>
-        </section>
+        {route === 'beranda' && recentTxs.length > 0 ? (
+          <section className="tx-section" aria-label="Transaksi tercatat">
+            <h2 className="tx-section__title">Mutasi terakhir ({recentTxs.length})</h2>
+            <ul className="tx-list">
+              {recentTxs.map((tx) => {
+                const cat = tx.categoryId ? categoryById.get(tx.categoryId) : undefined;
+                const acc = accountById.get(tx.accountId);
+                const groups = tx.kind === 'in' ? inGroups : outGroups;
+                const sign = tx.kind === 'in' ? '+' : '−';
+                const code = tx.kind === 'in' ? 'CR' : 'DB';
+                const meta = [acc?.name, tx.date, tx.note].filter(Boolean).join(' · ');
+
+                return (
+                  <li
+                    key={tx.id}
+                    className={`tx-row${lastSavedId === tx.id ? ' tx-row--new' : ''}`}
+                  >
+                    <span
+                      className="cat-badge"
+                      style={{
+                        background: cat ? groupColorToken(cat.group, groups) : 'var(--cat-8)',
+                      }}
+                    >
+                      {monogram(cat?.name ?? 'TX')}
+                    </span>
+                    <div className="tx-row__info">
+                      <span className="tx-row__title">{cat?.name ?? 'Transaksi'}</span>
+                      <span className="tx-row__meta num">{meta}</span>
+                    </div>
+                    <div
+                      className={`tx-row__amount num${
+                        tx.kind === 'in' ? ' tx-row__amount--in' : ' tx-row__amount--out'
+                      }`}
+                    >
+                      <span>
+                        {sign}
+                        {formatRp(tx.amount)}
+                      </span>
+                      <span className="tx-row__code">{code}</span>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        ) : (
+          <section className="empty-card" aria-label={screen.title}>
+            <h2 className="empty-card__title">{screen.title}</h2>
+            <p className="empty-card__desc">{screen.subtitle}</p>
+          </section>
+        )}
       </main>
 
       <nav className="bottom-nav" aria-label="Navigasi utama">
@@ -106,7 +177,7 @@ export function App() {
           type="button"
           className="bottom-nav__add"
           aria-label="Catat transaksi"
-          title="Catat transaksi (Task 3)"
+          onClick={() => setSheetOpen(true)}
         >
           <Icon name="plus" />
         </button>
@@ -127,6 +198,10 @@ export function App() {
           <span>Atur</span>
         </a>
       </nav>
+
+      {sheetOpen && (
+        <TxSheet db={db} onSave={handleSaveTx} onClose={() => setSheetOpen(false)} />
+      )}
     </div>
   );
 }
