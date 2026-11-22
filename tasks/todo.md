@@ -2,7 +2,7 @@
 
 Daftar kerja dari [`plan.md`](plan.md). Kerjakan berurutan, satu task per sesi.
 
-- [ ] **Task 1:** Fondasi proyek, design tokens, deploy pertama _(kode & build hijau; tinggal sambung Cloudflare Pages + cek HP)_
+- [x] **Task 1:** Fondasi proyek, design tokens, deploy pertama
 - [ ] **Task 2:** Uang, penyimpanan, data default (TDD)
 - [ ] **Task 3:** Catat cepat
 - [ ] **Task 4:** Beranda — saldo, rekening, mutasi terakhir (TDD ledger)

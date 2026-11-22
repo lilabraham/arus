@@ -45,8 +45,26 @@
   --r-md: 12px;            /* kartu, sheet */
 }
 
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --brand:  #0B2B29;
+  --bg:     #0E1413;
+  --surface:#161E1D;
+  --ink:    #E8EFED;
+  --ink-2:  #9AA9A6;
+  --line:   #26302E;
+  --in:     #4ADE9B;
+  --out:    #FB8A5B;
+  --warn:   #FBBF24;
+  --danger: #F87171;
+}
+
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --brand:  #0B2B29;
     --bg:     #0E1413;
     --surface:#161E1D;

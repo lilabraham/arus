@@ -1,6 +1,13 @@
 import { useSyncExternalStore } from 'react';
-import { Icon } from './components/Icon';
+import { Icon, type IconName } from './components/Icon';
 import { parseRoute, type Route } from './lib/route';
+import { getTheme, nextTheme, setTheme, subscribeTheme, type Theme } from './lib/theme';
+
+const THEME_META: Record<Theme, { label: string; icon: IconName }> = {
+  system: { label: 'Sistem', icon: 'system' },
+  light: { label: 'Terang', icon: 'sun' },
+  dark: { label: 'Gelap', icon: 'moon' },
+};
 
 const SCREENS: Record<Route, { title: string; subtitle: string }> = {
   beranda: {
@@ -36,19 +43,37 @@ function getHash() {
 
 export function App() {
   const route = parseRoute(useSyncExternalStore(subscribeHash, getHash));
+  const theme = useSyncExternalStore(subscribeTheme, getTheme);
   const screen = SCREENS[route];
+  const themeMeta = THEME_META[theme];
+
+  function handleCycleTheme() {
+    const systemIsDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    setTheme(nextTheme(theme, systemIsDark));
+  }
 
   return (
     <div className="shell">
       <header className="shell-header">
         <div className="shell-header__top">
           <span className="shell-header__brand">Arus</span>
-          {route !== 'anggaran' && (
-            <a href="#/anggaran" className="shell-header__pill">
-              <Icon name="anggaran" />
-              <span>Anggaran</span>
-            </a>
-          )}
+          <div className="shell-header__actions">
+            <button
+              type="button"
+              className="shell-header__pill"
+              onClick={handleCycleTheme}
+              aria-label={`Tema: ${themeMeta.label}. Ketuk untuk mengganti`}
+            >
+              <Icon name={themeMeta.icon} />
+              <span>{themeMeta.label}</span>
+            </button>
+            {route !== 'anggaran' && (
+              <a href="#/anggaran" className="shell-header__pill">
+                <Icon name="anggaran" />
+                <span>Anggaran</span>
+              </a>
+            )}
+          </div>
         </div>
         <h1 className="shell-header__title">{screen.title}</h1>
       </header>
