@@ -1,0 +1,207 @@
+.beranda-hero {
+  background: var(--brand);
+  color: var(--brand-ink);
+  padding: var(--s-3) var(--s-4) var(--s-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+.beranda-hero__balance-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+}
+
+.beranda-hero__label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+}
+
+.beranda-hero__label {
+  font-size: var(--step--1);
+  color: color-mix(in srgb, var(--brand-ink) 78%, transparent);
+}
+
+.beranda-hero__eye {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(var(--s-6) * 2);
+  height: calc(var(--s-6) * 2);
+  margin: calc(var(--s-2) * -1);
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--brand-ink);
+  cursor: pointer;
+}
+
+.beranda-hero__amount {
+  margin: 0;
+  font-size: var(--step-3);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.quick-menu {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--s-2);
+}
+
+.quick-menu__btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-1);
+  min-height: calc(var(--s-6) * 2);
+  padding: var(--s-2) var(--s-1);
+  border: 0;
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--brand-ink) 10%, transparent);
+  color: var(--brand-ink);
+  font-size: var(--step--1);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 150ms ease-out;
+}
+
+.quick-menu__btn:active:not(:disabled) {
+  background: color-mix(in srgb, var(--brand-ink) 18%, transparent);
+}
+
+.quick-menu__btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.quick-menu__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--s-8);
+  height: var(--s-8);
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--brand-ink) 14%, transparent);
+}
+
+.beranda-body {
+  padding: var(--s-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+}
+
+.section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-2);
+}
+
+.section-head__title {
+  margin: 0;
+  font-size: var(--step-0);
+  font-weight: 700;
+}
+
+.section-head__link {
+  font-size: var(--step--1);
+  font-weight: 600;
+  color: var(--brand);
+}
+
+:root[data-theme="dark"] .section-head__link {
+  color: var(--accent);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .section-head__link {
+    color: var(--accent);
+  }
+}
+
+.account-strip {
+  display: flex;
+  gap: var(--s-2);
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  padding-bottom: var(--s-1);
+}
+
+.account-card {
+  flex: 0 0 auto;
+  min-width: calc(var(--s-6) * 6);
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--ink);
+  transition: border-color 150ms ease-out;
+}
+
+.account-card:hover {
+  border-color: var(--brand);
+}
+
+.account-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+}
+
+.acc-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--s-6);
+  height: var(--s-6);
+  border-radius: var(--r-sm);
+  background: var(--brand);
+  color: var(--brand-ink);
+  font-size: var(--step--1);
+  font-weight: 700;
+}
+
+:root[data-theme="dark"] .acc-badge {
+  color: var(--accent);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .acc-badge {
+    color: var(--accent);
+  }
+}
+
+.account-card__type {
+  font-size: var(--step--1);
+  color: var(--ink-2);
+}
+
+.account-card__name {
+  font-size: var(--step--1);
+  font-weight: 600;
+  color: var(--ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-card__bal {
+  font-size: var(--step-0);
+  font-weight: 700;
+}
+
+.account-card__bal--neg {
+  color: var(--out);
+}

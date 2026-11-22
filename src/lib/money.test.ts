@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatRp, parseRp } from './money';
+import { formatRp, formatRpCompact, MASKED_RP, parseRp } from './money';
 
 describe('parseRp', () => {
   it('mem-parse angka polos dan pemisah ribuan titik', () => {
@@ -58,5 +58,16 @@ describe('formatRp', () => {
     expect(formatRp(25000)).toBe('Rp25.000');
     expect(formatRp(1250000)).toBe('Rp1.250.000');
     expect(formatRp(-500000)).toBe('−Rp500.000');
+  });
+
+  it('menyingkat nominal jutaan dan miliaran untuk kartu rekening tanpa float', () => {
+    expect(formatRpCompact(0)).toBe('Rp0');
+    expect(formatRpCompact(950000)).toBe('Rp950.000');
+    expect(formatRpCompact(1000000)).toBe('Rp1 jt');
+    expect(formatRpCompact(9200000)).toBe('Rp9,2 jt');
+    expect(formatRpCompact(12480000)).toBe('Rp12,5 jt');
+    expect(formatRpCompact(-2500000)).toBe('−Rp2,5 jt');
+    expect(formatRpCompact(1500000000)).toBe('Rp1,5 M');
+    expect(MASKED_RP).toBe('Rp •••••••');
   });
 });

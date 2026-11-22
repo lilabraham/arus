@@ -10,7 +10,12 @@ export type IconName =
   | 'system'
   | 'close'
   | 'backspace'
-  | 'search';
+  | 'search'
+  | 'eye'
+  | 'eyeOff'
+  | 'out'
+  | 'in'
+  | 'transfer';
 
 const PATHS: Record<IconName, string> = {
   beranda: 'M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',
@@ -25,6 +30,12 @@ const PATHS: Record<IconName, string> = {
   close: 'M6 6l12 12M18 6L6 18',
   backspace: 'M21 6H9l-6 6 6 6h12a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1zM12 10l4 4M16 10l-4 4',
   search: 'M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.3-4.3',
+  eye: 'M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z',
+  eyeOff:
+    'M3 3l18 18M10.6 10.6a3 3 0 0 0 4.2 4.2M9.9 5.2A10.4 10.4 0 0 1 12 5c6.5 0 10 7 10 7a18 18 0 0 1-3.4 4.4M6.6 6.6A18 18 0 0 0 2 12s3.5 7 10 7a10 10 0 0 0 4-.8',
+  out: 'M7 17L17 7M9 7h8v8',
+  in: 'M17 7L7 17M15 17H7V9',
+  transfer: 'M4 8h16M16 4l4 4-4 4M20 16H4M8 12l-4 4 4 4',
 };
 
 export function Icon({ name }: { name: IconName }) {

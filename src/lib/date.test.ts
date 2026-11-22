@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isValidDateStr, todayLocal } from './date';
+import { formatShortDate, greeting, isValidDateStr, todayLocal } from './date';
 
 describe('date', () => {
   it('memformat tanggal lokal menjadi YYYY-MM-DD tanpa geser zona waktu', () => {
@@ -19,5 +19,18 @@ describe('date', () => {
     expect(isValidDateStr('2026-13-01')).toBe(false);
     expect(isValidDateStr('22-11-2026')).toBe(false);
     expect(isValidDateStr('')).toBe(false);
+  });
+
+  it('memformat tanggal singkat Indonesia tanpa geser zona waktu', () => {
+    expect(formatShortDate('2026-11-22')).toBe('22 Nov');
+    expect(formatShortDate('2026-01-05')).toBe('5 Jan');
+  });
+
+  it('memberi sapaan sesuai jam lokal', () => {
+    expect(greeting(new Date(2026, 10, 22, 7, 0))).toBe('Selamat pagi');
+    expect(greeting(new Date(2026, 10, 22, 12, 30))).toBe('Selamat siang');
+    expect(greeting(new Date(2026, 10, 22, 16, 0))).toBe('Selamat sore');
+    expect(greeting(new Date(2026, 10, 22, 21, 0))).toBe('Selamat malam');
+    expect(greeting(new Date(2026, 10, 22, 2, 0))).toBe('Selamat malam');
   });
 });
