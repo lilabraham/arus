@@ -33,7 +33,7 @@
 
 .kind-tabs {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: var(--s-1);
   padding: var(--s-1);
   border-radius: var(--r-sm);
@@ -43,13 +43,14 @@
 
 .kind-tabs__btn {
   min-height: calc(var(--s-6) * 2 - var(--s-2));
-  padding: var(--s-1) var(--s-3);
+  padding: var(--s-1) var(--s-2);
   border: 0;
   border-radius: var(--r-sm);
   background: transparent;
   color: var(--ink-2);
   font-size: var(--step--1);
   font-weight: 600;
+  white-space: nowrap;
   cursor: pointer;
   transition: background 150ms ease-out, color 150ms ease-out;
 }
@@ -66,6 +67,20 @@
 
 .kind-tabs__btn--in[aria-pressed="true"] {
   color: var(--in);
+}
+
+.kind-tabs__btn--transfer[aria-pressed="true"] {
+  color: var(--brand);
+}
+
+:root[data-theme="dark"] .kind-tabs__btn--transfer[aria-pressed="true"] {
+  color: var(--accent);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .kind-tabs__btn--transfer[aria-pressed="true"] {
+    color: var(--accent);
+  }
 }
 
 .sheet__close {
@@ -104,6 +119,10 @@
   color: var(--in);
 }
 
+.sheet__amount-btn--transfer {
+  color: var(--ink);
+}
+
 .sheet__amount-btn--empty {
   color: var(--ink-2);
 }
@@ -112,6 +131,26 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--s-2);
+}
+
+.sheet__select-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  min-width: 0;
+}
+
+.sheet__select-label {
+  font-size: var(--step--1);
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.sheet__error {
+  margin: 0;
+  font-size: var(--step--1);
+  font-weight: 600;
+  color: var(--danger);
 }
 
 .sheet__field {

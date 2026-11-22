@@ -3,11 +3,12 @@ import {
   accountBalance,
   accountMonogram,
   groupByDay,
+  monthTotals,
   recentTransactions,
   totalBalance,
   txsInMonth,
 } from './ledger';
-import { updateTx } from './tx';
+import { createTx, updateTx } from './tx';
 import type { Account, Tx } from './types';
 
 const bca: Account = { id: 'acc-bca', name: 'BCA', type: 'bank', initialBalance: 5000000, archived: false };
@@ -138,5 +139,40 @@ describe('ledger', () => {
 
     // Hapus transaksi -> saldo kembali ke awal
     expect(accountBalance(dana, [])).toBe(100000);
+  });
+
+  it('transfer mengurangi saldo asal, menambah tujuan, dan tidak masuk total masuk/keluar bulan', () => {
+    expect(monthTotals([], '2026-11')).toEqual({ totalIn: 0, totalOut: 0, net: 0 });
+
+    const transfer = createTx({
+      kind: 'transfer',
+      amount: 750000,
+      accountId: 'acc-bca',
+      toAccountId: 'acc-dana',
+      note: 'Top up',
+      date: '2026-11-22',
+    });
+    expect(transfer).not.toBeNull();
+
+    const txs: Tx[] = [
+      { id: '1', kind: 'in', amount: 3000000, accountId: 'acc-bca', categoryId: 'c-in', note: '', date: '2026-11-01', createdAt: 10 },
+      { id: '2', kind: 'out', amount: 400000, accountId: 'acc-bca', categoryId: 'c-out', note: '', date: '2026-11-05', createdAt: 20 },
+      { id: '3', kind: 'out', amount: 100000, accountId: 'acc-bca', categoryId: 'c-out', note: '', date: '2026-10-31', createdAt: 5 },
+      ...(transfer ? [transfer] : []),
+    ];
+
+    // BCA: 5jt + 3jt - 400rb - 100rb - 750rb = 6.750.000
+    expect(accountBalance(bca, txs)).toBe(6750000);
+    // DANA: 100rb + 750rb = 850.000
+    expect(accountBalance(dana, txs)).toBe(850000);
+    // Total saldo dua rekening sama dengan sebelum transfer (6.750.000 + 850.000 = 7.600.000)
+    expect(totalBalance([bca, dana], txs)).toBe(7600000);
+
+    // Total bulan November: hanya masuk 3jt dan keluar 400rb; transfer 750rb tidak dihitung
+    expect(monthTotals(txs, '2026-11')).toEqual({
+      totalIn: 3000000,
+      totalOut: 400000,
+      net: 2600000,
+    });
   });
 });

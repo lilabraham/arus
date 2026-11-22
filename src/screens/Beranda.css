@@ -71,13 +71,8 @@
   transition: background 150ms ease-out;
 }
 
-.quick-menu__btn:active:not(:disabled) {
+.quick-menu__btn:active {
   background: color-mix(in srgb, var(--brand-ink) 18%, transparent);
-}
-
-.quick-menu__btn:disabled {
-  opacity: 0.62;
-  cursor: not-allowed;
 }
 
 .quick-menu__icon {

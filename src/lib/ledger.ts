@@ -56,6 +56,22 @@ export function txsInMonth(txs: readonly Tx[], month: string): Tx[] {
   return txs.filter((tx) => tx.date.startsWith(prefix));
 }
 
+export interface MonthTotals {
+  totalIn: number;
+  totalOut: number;
+  net: number;
+}
+
+export function monthTotals(txs: readonly Tx[], month: string): MonthTotals {
+  let totalIn = 0;
+  let totalOut = 0;
+  for (const tx of txsInMonth(txs, month)) {
+    if (tx.kind === 'in') totalIn += tx.amount;
+    if (tx.kind === 'out') totalOut += tx.amount;
+  }
+  return { totalIn, totalOut, net: totalIn - totalOut };
+}
+
 export interface DayGroup {
   date: string;
   txs: Tx[];

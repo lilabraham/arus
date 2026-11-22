@@ -9,14 +9,14 @@ import {
   totalBalance,
 } from '../lib/ledger';
 import { formatRp, formatRpCompact, MASKED_RP } from '../lib/money';
-import type { CategoryKind, Db, Tx } from '../lib/types';
+import type { Db, Tx, TxKind } from '../lib/types';
 import './Beranda.css';
 
 interface BerandaProps {
   db: Db;
   lastSavedId: string | null;
   onToggleHide: () => void;
-  onQuickAdd: (kind: CategoryKind) => void;
+  onQuickAdd: (kind: TxKind) => void;
   onSelectTx: (tx: Tx) => void;
 }
 
@@ -65,8 +65,7 @@ export function Beranda({ db, lastSavedId, onToggleHide, onQuickAdd, onSelectTx 
           <button
             type="button"
             className="quick-menu__btn"
-            disabled
-            title="Transfer tersedia di Task 6"
+            onClick={() => onQuickAdd('transfer')}
           >
             <span className="quick-menu__icon">
               <Icon name="transfer" />

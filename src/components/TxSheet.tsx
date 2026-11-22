@@ -9,14 +9,14 @@ import {
 import { isValidDateStr, todayLocal } from '../lib/date';
 import { formatRp } from '../lib/money';
 import { applyKeypadKey, createTx, updateTx, type KeypadKey } from '../lib/tx';
-import type { Category, CategoryKind, Db, Id, Tx } from '../lib/types';
+import type { Category, CategoryKind, Db, Id, Tx, TxKind } from '../lib/types';
 import { Icon } from './Icon';
 import { Keypad } from './Keypad';
 import './TxSheet.css';
 
 interface TxSheetProps {
   db: Db;
-  initialKind?: CategoryKind;
+  initialKind?: TxKind;
   editingTx?: Tx;
   onSave: (tx: Tx) => void;
   onDelete?: (id: Id) => void;
@@ -37,6 +37,10 @@ function pickInitialAccount(db: Db): Id {
   return active[0]?.id ?? '';
 }
 
+function pickInitialToAccount(db: Db, fromId: Id): Id {
+  return db.accounts.find((a) => !a.archived && a.id !== fromId)?.id ?? '';
+}
+
 export function TxSheet({
   db,
   initialKind = 'out',
@@ -46,14 +50,19 @@ export function TxSheet({
   onClose,
 }: TxSheetProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const startKind: CategoryKind = editingTx ? (editingTx.kind === 'in' ? 'in' : 'out') : initialKind;
-  const [kind, setKind] = useState<CategoryKind>(startKind);
+  const startKind: TxKind = editingTx ? editingTx.kind : initialKind;
+  const [kind, setKind] = useState<TxKind>(startKind);
   const [digits, setDigits] = useState(() => (editingTx ? String(editingTx.amount) : ''));
   const [categoryId, setCategoryId] = useState<Id>(
-    () => editingTx?.categoryId ?? pickInitialCategory(db, startKind),
+    () => editingTx?.categoryId ?? pickInitialCategory(db, startKind === 'in' ? 'in' : 'out'),
   );
   const [accountId, setAccountId] = useState<Id>(
     () => editingTx?.accountId ?? pickInitialAccount(db),
+  );
+  const [toAccountId, setToAccountId] = useState<Id>(
+    () =>
+      editingTx?.toAccountId ??
+      pickInitialToAccount(db, editingTx?.accountId ?? pickInitialAccount(db)),
   );
   const [date, setDate] = useState(() => editingTx?.date ?? todayLocal());
   const [note, setNote] = useState(() => editingTx?.note ?? '');
@@ -66,11 +75,15 @@ export function TxSheet({
     if (el && !el.open) el.showModal();
   }, []);
 
-  const accountOptions = db.accounts.filter((a) => !a.archived || a.id === accountId);
-  const activeForKind = db.categories.filter((c) => !c.archived && c.kind === kind);
-  const allGroups = categoryGroups(db.categories, kind);
+  const isTransfer = kind === 'transfer';
+  const catKind: CategoryKind = kind === 'in' ? 'in' : 'out';
+  const accountOptions = db.accounts.filter(
+    (a) => !a.archived || a.id === accountId || a.id === toAccountId,
+  );
+  const activeForKind = db.categories.filter((c) => !c.archived && c.kind === catKind);
+  const allGroups = categoryGroups(db.categories, catKind);
 
-  const recentIds = recentCategoryIds(db.txs, kind, 6);
+  const recentIds = recentCategoryIds(db.txs, catKind, 6);
   const recentCats = recentIds
     .map((id) => activeForKind.find((c) => c.id === id))
     .filter((c): c is Category => c !== undefined);
@@ -83,9 +96,15 @@ export function TxSheet({
   }
 
   const selectedCat =
-    db.categories.find((c) => c.id === categoryId && c.kind === kind) ?? activeForKind[0];
+    db.categories.find((c) => c.id === categoryId && c.kind === catKind) ?? activeForKind[0];
   const amount = digits ? Number(digits) : 0;
-  const canSubmit = amount > 0 && Boolean(selectedCat) && Boolean(accountId) && isValidDateStr(date);
+  const sameAccount = isTransfer && Boolean(accountId) && accountId === toAccountId;
+  const missingDest = isTransfer && !toAccountId;
+  const canSubmit =
+    amount > 0 &&
+    Boolean(accountId) &&
+    isValidDateStr(date) &&
+    (isTransfer ? Boolean(toAccountId) && !sameAccount : Boolean(selectedCat));
 
   function selectCategory(id: Id) {
     setCategoryId(id);
@@ -93,16 +112,24 @@ export function TxSheet({
     setSearch('');
   }
 
-  function switchKind(next: CategoryKind) {
+  function switchKind(next: TxKind) {
     if (next === kind) return;
     setKind(next);
+    setConfirmDelete(false);
+    if (next === 'transfer') {
+      setPickingCategory(false);
+      setSearch('');
+      if (!toAccountId || toAccountId === accountId) {
+        setToAccountId(pickInitialToAccount(db, accountId));
+      }
+      return;
+    }
     const nextCat =
       editingTx && editingTx.kind === next && editingTx.categoryId
         ? editingTx.categoryId
         : pickInitialCategory(db, next);
     setCategoryId(nextCat);
     setSearch('');
-    setConfirmDelete(false);
   }
 
   function handleKeypad(key: KeypadKey) {
@@ -111,6 +138,19 @@ export function TxSheet({
   }
 
   function handleSubmit() {
+    if (kind === 'transfer') {
+      const input = {
+        kind: 'transfer' as const,
+        amount,
+        accountId,
+        toAccountId,
+        note,
+        date,
+      };
+      const tx = editingTx ? updateTx(editingTx, input) : createTx(input);
+      if (tx) onSave(tx);
+      return;
+    }
     if (!selectedCat) return;
     const input = {
       kind,
@@ -150,7 +190,7 @@ export function TxSheet({
     }
   }
 
-  const filteredCats = filterCategories(db.categories, kind, search);
+  const filteredCats = isTransfer ? [] : filterCategories(db.categories, catKind, search);
   const grouped = new Map<string, Category[]>();
   for (const cat of filteredCats) {
     const list = grouped.get(cat.group) ?? [];
@@ -162,7 +202,7 @@ export function TxSheet({
     ...grouped.entries(),
   ];
 
-  const sign = kind === 'in' ? '+' : '−';
+  const sign = kind === 'in' ? '+' : kind === 'out' ? '−' : '';
 
   return (
     <dialog
@@ -197,6 +237,14 @@ export function TxSheet({
             >
               + Masuk
             </button>
+            <button
+              type="button"
+              className="kind-tabs__btn kind-tabs__btn--transfer"
+              aria-pressed={kind === 'transfer'}
+              onClick={() => switchKind('transfer')}
+            >
+              ⇄ Transfer
+            </button>
           </div>
           <button type="button" className="sheet__close" onClick={onClose} aria-label="Tutup">
             <Icon name="close" />
@@ -214,7 +262,7 @@ export function TxSheet({
           {amount === 0 ? 'Rp0' : `${sign}${formatRp(amount)}`}
         </button>
 
-        {pickingCategory ? (
+        {!isTransfer && pickingCategory ? (
           <div className="cat-picker">
             <div className="cat-picker__bar">
               <label className="cat-picker__search-wrap">
@@ -273,58 +321,104 @@ export function TxSheet({
           </div>
         ) : (
           <>
-            <div className="sheet__row">
-              <button
-                type="button"
-                className="sheet__field sheet__field-btn"
-                onClick={() => setPickingCategory(true)}
-                aria-label="Pilih kategori"
-              >
-                {selectedCat && (
-                  <span
-                    className="cat-badge"
-                    style={{ background: groupColorToken(selectedCat.group, allGroups) }}
-                  >
-                    {monogram(selectedCat.name)}
-                  </span>
+            {isTransfer ? (
+              <>
+                <div className="sheet__row">
+                  <label className="sheet__select-wrap">
+                    <span className="sheet__select-label">Dari</span>
+                    <select
+                      className="sheet__field"
+                      value={accountId}
+                      onChange={(e) => setAccountId(e.target.value)}
+                    >
+                      {accountOptions.map((acc) => (
+                        <option key={acc.id} value={acc.id}>
+                          {acc.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="sheet__select-wrap">
+                    <span className="sheet__select-label">Ke</span>
+                    <select
+                      className="sheet__field"
+                      value={toAccountId}
+                      onChange={(e) => setToAccountId(e.target.value)}
+                    >
+                      {accountOptions.map((acc) => (
+                        <option key={acc.id} value={acc.id}>
+                          {acc.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+
+                {(sameAccount || missingDest) && (
+                  <p className="sheet__error" role="alert">
+                    {sameAccount
+                      ? 'Rekening asal dan tujuan harus berbeda.'
+                      : 'Minimal perlu dua rekening aktif untuk transfer.'}
+                  </p>
                 )}
-                <span className="sheet__field-label">{selectedCat?.name ?? 'Pilih kategori'}</span>
-              </button>
+              </>
+            ) : (
+              <>
+                <div className="sheet__row">
+                  <button
+                    type="button"
+                    className="sheet__field sheet__field-btn"
+                    onClick={() => setPickingCategory(true)}
+                    aria-label="Pilih kategori"
+                  >
+                    {selectedCat && (
+                      <span
+                        className="cat-badge"
+                        style={{ background: groupColorToken(selectedCat.group, allGroups) }}
+                      >
+                        {monogram(selectedCat.name)}
+                      </span>
+                    )}
+                    <span className="sheet__field-label">{selectedCat?.name ?? 'Pilih kategori'}</span>
+                  </button>
 
-              <select
-                className="sheet__field"
-                value={accountId}
-                onChange={(e) => setAccountId(e.target.value)}
-                aria-label="Rekening"
-              >
-                {accountOptions.map((acc) => (
-                  <option key={acc.id} value={acc.id}>
-                    {acc.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+                  <select
+                    className="sheet__field"
+                    value={accountId}
+                    onChange={(e) => setAccountId(e.target.value)}
+                    aria-label="Rekening"
+                  >
+                    {accountOptions.map((acc) => (
+                      <option key={acc.id} value={acc.id}>
+                        {acc.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-            <div className="sheet__chips" role="group" aria-label="Kategori cepat">
-              {quickCats.map((cat) => (
-                <button
-                  key={cat.id}
-                  type="button"
-                  className="sheet__chip"
-                  aria-pressed={selectedCat?.id === cat.id}
-                  onClick={() => setCategoryId(cat.id)}
-                >
-                  {cat.name}
-                </button>
-              ))}
-              <button
-                type="button"
-                className="sheet__chip sheet__chip--more"
-                onClick={() => setPickingCategory(true)}
-              >
-                Semua
-              </button>
-            </div>
+                <div className="sheet__chips" role="group" aria-label="Kategori cepat">
+                  {quickCats.map((cat) => (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      className="sheet__chip"
+                      aria-pressed={selectedCat?.id === cat.id}
+                      onClick={() => setCategoryId(cat.id)}
+                    >
+                      {cat.name}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    className="sheet__chip sheet__chip--more"
+                    onClick={() => setPickingCategory(true)}
+                  >
+                    Semua
+                  </button>
+                </div>
+              </>
+            )}
 
             <div className="sheet__row">
               <input

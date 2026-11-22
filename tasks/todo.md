@@ -8,7 +8,7 @@ Daftar kerja dari [`plan.md`](plan.md). Kerjakan berurutan, satu task per sesi.
 - [x] **Task 4:** Beranda — saldo, rekening, mutasi terakhir (TDD ledger)
 - [x] **Checkpoint 1 (Task 1–4):** Gate desain + review + `code-simplification`
 - [x] **Task 5:** Mutasi
-- [ ] **Task 6:** Transfer antar rekening
+- [x] **Task 6:** Transfer antar rekening
 - [ ] **Task 7:** Filter, cari, saldo berjalan
 - [ ] **Checkpoint 2 (Task 5–7):** Review + `code-simplification`
 - [ ] **Task 8:** Laporan bulanan

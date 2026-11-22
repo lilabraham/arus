@@ -28,11 +28,14 @@ export function TxRow({
 }: TxRowProps) {
   const title =
     tx.kind === 'transfer'
-      ? `Transfer → ${toAccount?.name ?? 'Rekening'}`
+      ? `${account?.name ?? 'Rekening'} → ${toAccount?.name ?? 'Rekening'}`
       : (category?.name ?? 'Transaksi');
-  const meta = [showDate ? formatShortDate(tx.date) : '', account?.name, tx.note]
-    .filter(Boolean)
-    .join(' · ');
+  const meta =
+    tx.kind === 'transfer'
+      ? [showDate ? formatShortDate(tx.date) : '', 'Transfer', tx.note].filter(Boolean).join(' · ')
+      : [showDate ? formatShortDate(tx.date) : '', account?.name, tx.note]
+          .filter(Boolean)
+          .join(' · ');
   const code = tx.kind === 'in' ? 'CR' : tx.kind === 'out' ? 'DB' : 'TR';
   const sign = tx.kind === 'in' ? '+' : tx.kind === 'out' ? '−' : '';
   const badgeColor =

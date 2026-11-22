@@ -54,6 +54,62 @@ describe('createTx', () => {
     expect(createTx({ ...base, categoryId: '' })).toBeNull();
     expect(createTx({ ...base, date: '2026-02-31' })).toBeNull();
   });
+
+  it('membuat transfer valid dan menolak jika rekening asal sama dengan tujuan', () => {
+    const now = new Date(2026, 10, 22, 15, 0, 0);
+    const tx = createTx(
+      {
+        kind: 'transfer',
+        amount: 500000,
+        accountId: 'acc-bca',
+        toAccountId: 'acc-dana',
+        note: '  Top up DANA  ',
+        date: '2026-11-22',
+      },
+      now,
+    );
+
+    expect(tx).not.toBeNull();
+    expect(tx?.kind).toBe('transfer');
+    expect(tx?.accountId).toBe('acc-bca');
+    expect(tx?.toAccountId).toBe('acc-dana');
+    expect(tx?.categoryId).toBeUndefined();
+    expect(tx?.note).toBe('Top up DANA');
+
+    // Asal = tujuan ditolak
+    expect(
+      createTx({
+        kind: 'transfer',
+        amount: 500000,
+        accountId: 'acc-bca',
+        toAccountId: 'acc-bca',
+        note: '',
+        date: '2026-11-22',
+      }),
+    ).toBeNull();
+
+    // Tujuan kosong atau nominal invalid ditolak
+    expect(
+      createTx({
+        kind: 'transfer',
+        amount: 500000,
+        accountId: 'acc-bca',
+        toAccountId: '',
+        note: '',
+        date: '2026-11-22',
+      }),
+    ).toBeNull();
+    expect(
+      createTx({
+        kind: 'transfer',
+        amount: 0,
+        accountId: 'acc-bca',
+        toAccountId: 'acc-dana',
+        note: '',
+        date: '2026-11-22',
+      }),
+    ).toBeNull();
+  });
 });
 
 describe('updateTx', () => {
@@ -122,5 +178,61 @@ describe('updateTx', () => {
         date: '2026-02-30',
       }),
     ).toBeNull();
+  });
+
+  it('memperbarui transfer dan membersihkan field lama saat ganti jenis', () => {
+    const existing = {
+      id: 'tx-tr-1',
+      kind: 'transfer' as const,
+      amount: 300000,
+      accountId: 'acc-bca',
+      toAccountId: 'acc-dana',
+      note: 'Awal',
+      date: '2026-11-20',
+      createdAt: 500,
+    };
+
+    // Asal = tujuan tetap ditolak saat edit
+    expect(
+      updateTx(existing, {
+        kind: 'transfer',
+        amount: 300000,
+        accountId: 'acc-bca',
+        toAccountId: 'acc-bca',
+        note: '',
+        date: '2026-11-20',
+      }),
+    ).toBeNull();
+
+    const updatedTransfer = updateTx(existing, {
+      kind: 'transfer',
+      amount: 450000,
+      accountId: 'acc-dana',
+      toAccountId: 'acc-bca',
+      note: 'Tarik balik',
+      date: '2026-11-22',
+    });
+    expect(updatedTransfer).toEqual({
+      id: 'tx-tr-1',
+      kind: 'transfer',
+      amount: 450000,
+      accountId: 'acc-dana',
+      toAccountId: 'acc-bca',
+      note: 'Tarik balik',
+      date: '2026-11-22',
+      createdAt: 500,
+    });
+
+    // Ubah transfer menjadi keluar -> toAccountId hilang, categoryId terisi
+    const asOut = updateTx(existing, {
+      kind: 'out',
+      amount: 300000,
+      accountId: 'acc-bca',
+      categoryId: 'cat-out-1',
+      note: 'Ternyata belanja',
+      date: '2026-11-20',
+    });
+    expect(asOut?.toAccountId).toBeUndefined();
+    expect(asOut?.categoryId).toBe('cat-out-1');
   });
 });

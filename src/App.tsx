@@ -5,11 +5,11 @@ import { greeting } from './lib/date';
 import { parseRoute, type Route } from './lib/route';
 import { getDb, subscribeDb, updateDb } from './lib/store';
 import { getTheme, nextTheme, setTheme, subscribeTheme, type Theme } from './lib/theme';
-import type { CategoryKind, Id, Tx } from './lib/types';
+import type { Id, Tx, TxKind } from './lib/types';
 import { Beranda } from './screens/Beranda';
 import { Mutasi } from './screens/Mutasi';
 
-type SheetState = { mode: 'new'; kind: CategoryKind } | { mode: 'edit'; tx: Tx };
+type SheetState = { mode: 'new'; kind: TxKind } | { mode: 'edit'; tx: Tx };
 
 const THEME_META: Record<Theme, { label: string; icon: IconName }> = {
   system: { label: 'Sistem', icon: 'system' },
@@ -80,7 +80,6 @@ export function App() {
   }
 
   function handleSelectTx(tx: Tx) {
-    if (tx.kind === 'transfer') return;
     setSheet({ mode: 'edit', tx });
   }
 
