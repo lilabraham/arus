@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { filterCategories, groupColorToken, monogram, recentCategoryIds } from './category';
+import {
+  categoryGroups,
+  filterCategories,
+  groupColorToken,
+  monogram,
+  recentCategoryIds,
+} from './category';
 import { createDefaultDb } from './defaults';
 import type { Tx } from './types';
 
@@ -44,5 +50,8 @@ describe('category helpers', () => {
 
     const activeOut = filterCategories(withArchived, 'out', '');
     expect(activeOut.some((c) => c.id === categories[0].id)).toBe(false);
+
+    // Urutan kelompok tetap stabil meski ada kategori yang diarsipkan
+    expect(categoryGroups(withArchived, 'out')).toEqual(categoryGroups(categories, 'out'));
   });
 });

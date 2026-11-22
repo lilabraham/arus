@@ -1,5 +1,5 @@
 import { Icon } from '../components/Icon';
-import { groupColorToken, monogram } from '../lib/category';
+import { categoryGroups, groupColorToken, monogram } from '../lib/category';
 import { formatShortDate } from '../lib/date';
 import {
   ACCOUNT_TYPE_LABEL,
@@ -25,12 +25,8 @@ export function Beranda({ db, lastSavedId, onToggleHide, onQuickAdd }: BerandaPr
   const activeAccounts = db.accounts.filter((a) => !a.archived);
   const accountById = new Map(db.accounts.map((a) => [a.id, a]));
   const categoryById = new Map(db.categories.map((c) => [c.id, c]));
-  const outGroups = Array.from(
-    new Set(db.categories.filter((c) => c.kind === 'out').map((c) => c.group)),
-  );
-  const inGroups = Array.from(
-    new Set(db.categories.filter((c) => c.kind === 'in').map((c) => c.group)),
-  );
+  const outGroups = categoryGroups(db.categories, 'out');
+  const inGroups = categoryGroups(db.categories, 'in');
   const latest = recentTransactions(db.txs, 5);
 
   return (

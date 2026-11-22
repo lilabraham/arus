@@ -7,6 +7,10 @@ export function monogram(name: string): string {
   return raw.toUpperCase();
 }
 
+export function categoryGroups(categories: readonly Category[], kind: CategoryKind): string[] {
+  return Array.from(new Set(categories.filter((c) => c.kind === kind).map((c) => c.group)));
+}
+
 export function groupColorToken(group: string, allGroups: readonly string[]): string {
   const idx = allGroups.indexOf(group);
   if (idx < 0) return 'var(--cat-8)';

@@ -1,6 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { filterCategories, groupColorToken, monogram, recentCategoryIds } from '../lib/category';
-import { todayLocal } from '../lib/date';
+import {
+  categoryGroups,
+  filterCategories,
+  groupColorToken,
+  monogram,
+  recentCategoryIds,
+} from '../lib/category';
+import { isValidDateStr, todayLocal } from '../lib/date';
 import { formatRp } from '../lib/money';
 import { applyKeypadKey, createTx, type KeypadKey } from '../lib/tx';
 import type { Category, CategoryKind, Db, Id, Tx } from '../lib/types';
@@ -47,7 +53,7 @@ export function TxSheet({ db, initialKind = 'out', onSave, onClose }: TxSheetPro
 
   const activeAccounts = db.accounts.filter((a) => !a.archived);
   const activeForKind = db.categories.filter((c) => !c.archived && c.kind === kind);
-  const allGroups = Array.from(new Set(activeForKind.map((c) => c.group)));
+  const allGroups = categoryGroups(db.categories, kind);
 
   const recentIds = recentCategoryIds(db.txs, kind, 6);
   const recentCats = recentIds
@@ -63,7 +69,13 @@ export function TxSheet({ db, initialKind = 'out', onSave, onClose }: TxSheetPro
 
   const selectedCat = activeForKind.find((c) => c.id === categoryId) ?? activeForKind[0];
   const amount = digits ? Number(digits) : 0;
-  const canSubmit = amount > 0 && Boolean(selectedCat) && Boolean(accountId) && Boolean(date);
+  const canSubmit = amount > 0 && Boolean(selectedCat) && Boolean(accountId) && isValidDateStr(date);
+
+  function selectCategory(id: Id) {
+    setCategoryId(id);
+    setPickingCategory(false);
+    setSearch('');
+  }
 
   function switchKind(next: CategoryKind) {
     if (next === kind) return;
@@ -109,7 +121,7 @@ export function TxSheet({ db, initialKind = 'out', onSave, onClose }: TxSheetPro
     } else if (e.key === 'Delete') {
       e.preventDefault();
       handleKeypad('clear');
-    } else if (e.key === 'Enter' && canSubmit) {
+    } else if (e.key === 'Enter' && tag !== 'BUTTON' && tag !== 'A' && canSubmit) {
       e.preventDefault();
       handleSubmit();
     }
@@ -122,6 +134,10 @@ export function TxSheet({ db, initialKind = 'out', onSave, onClose }: TxSheetPro
     list.push(cat);
     grouped.set(cat.group, list);
   }
+  const pickerSections: [string, Category[]][] = [
+    ...(!search.trim() && recentCats.length > 0 ? [['Terakhir dipakai', recentCats] as [string, Category[]]] : []),
+    ...grouped.entries(),
+  ];
 
   const sign = kind === 'in' ? '+' : '−';
 
@@ -202,50 +218,17 @@ export function TxSheet({ db, initialKind = 'out', onSave, onClose }: TxSheetPro
             </div>
 
             <div className="cat-picker__list">
-              {!search.trim() && recentCats.length > 0 && (
-                <div>
-                  <p className="cat-picker__group-title">Terakhir dipakai</p>
-                  <div className="cat-picker__items">
-                    {recentCats.map((cat) => (
-                      <button
-                        key={`recent-${cat.id}`}
-                        type="button"
-                        className="cat-picker__item"
-                        aria-pressed={selectedCat?.id === cat.id}
-                        onClick={() => {
-                          setCategoryId(cat.id);
-                          setPickingCategory(false);
-                          setSearch('');
-                        }}
-                      >
-                        <span
-                          className="cat-badge"
-                          style={{ background: groupColorToken(cat.group, allGroups) }}
-                        >
-                          {monogram(cat.name)}
-                        </span>
-                        <span>{cat.name}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {Array.from(grouped.entries()).map(([group, cats]) => (
-                <div key={group}>
-                  <p className="cat-picker__group-title">{group}</p>
+              {pickerSections.map(([sectionTitle, cats]) => (
+                <div key={sectionTitle}>
+                  <p className="cat-picker__group-title">{sectionTitle}</p>
                   <div className="cat-picker__items">
                     {cats.map((cat) => (
                       <button
-                        key={cat.id}
+                        key={`${sectionTitle}-${cat.id}`}
                         type="button"
                         className="cat-picker__item"
                         aria-pressed={selectedCat?.id === cat.id}
-                        onClick={() => {
-                          setCategoryId(cat.id);
-                          setPickingCategory(false);
-                          setSearch('');
-                        }}
+                        onClick={() => selectCategory(cat.id)}
                       >
                         <span
                           className="cat-badge"
