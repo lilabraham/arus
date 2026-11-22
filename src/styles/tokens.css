@@ -1,0 +1,61 @@
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/fonts/plus-jakarta-sans-latin.woff2") format("woff2");
+}
+
+:root {
+  color-scheme: light dark;
+
+  /* Merek */
+  --brand:      #0F3D3A;   /* petrol: header, kartu saldo */
+  --brand-ink:  #F2F7F5;   /* teks di atas --brand */
+  --accent:     #CFF25C;   /* lime: tombol utama (selalu dengan teks gelap --brand) */
+
+  /* Permukaan & teks — terang */
+  --bg:         #F5F7F6;
+  --surface:    #FFFFFF;
+  --ink:        #13201E;
+  --ink-2:      #5B6A67;   /* kontras >= 4.5:1 di --bg dan --surface */
+  --line:       #E1E7E5;
+
+  /* Semantik */
+  --in:         #13795B;   /* pemasukan / CR */
+  --out:        #C2410C;   /* pengeluaran / DB */
+  --warn:       #B45309;   /* anggaran >= 80% */
+  --danger:     #B91C1C;   /* anggaran jebol */
+
+  /* Palet kategori (bergiliran per kelompok) */
+  --cat-1: #0F766E; --cat-2: #B45309; --cat-3: #1D4ED8; --cat-4: #BE185D;
+  --cat-5: #4D7C0F; --cat-6: #7C2D12; --cat-7: #0369A1; --cat-8: #6B7280;
+
+  /* Tipografi */
+  --font: "Plus Jakarta Sans", system-ui, sans-serif;
+  --step--1: 0.8125rem;
+  --step-0:  0.9375rem;
+  --step-1:  1.125rem;
+  --step-2:  1.5rem;
+  --step-3:  2rem;         /* saldo utama */
+
+  /* Spasi (kelipatan 4 px) & bentuk */
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 20px; --s-6: 24px; --s-8: 32px;
+  --r-sm: 6px;             /* input, chip, monogram */
+  --r-md: 12px;            /* kartu, sheet */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --brand:  #0B2B29;
+    --bg:     #0E1413;
+    --surface:#161E1D;
+    --ink:    #E8EFED;
+    --ink-2:  #9AA9A6;
+    --line:   #26302E;
+    --in:     #4ADE9B;
+    --out:    #FB8A5B;
+    --warn:   #FBBF24;
+    --danger: #F87171;
+  }
+}

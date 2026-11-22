@@ -1,7 +1,7 @@
 # Spec: Arus — Aplikasi Keuangan Pribadi — V1
 
 > Format mengikuti `spec-driven-development` (addyosmani/agent-skills).
-> Status: **DRAFT v2 — menunggu review**. Jangan mulai coding sebelum spec ini disetujui.
+> Status: **Disetujui** — mulai implementasi V1.
 
 ## Nama
 

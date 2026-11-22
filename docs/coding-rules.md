@@ -67,7 +67,7 @@ export function Amount({ value, kind }: { value: number; kind: 'in' | 'out' }) {
 
 ## Dependency
 
-Diizinkan: `react`, `react-dom`, `vite`, `@vitejs/plugin-react`, `typescript`, `vitest`.
+Diizinkan: `react`, `react-dom`, `vite`, `@vitejs/plugin-react`, `typescript`, `vitest`, `@types/react`, `@types/react-dom`.
 Dependency lain → **tanya dulu** dan tulis alasannya di commit.
 
 ## Test
