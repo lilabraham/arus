@@ -130,8 +130,13 @@
   display: flex;
   gap: var(--s-2);
   overflow-x: auto;
+  overscroll-behavior-x: contain;
   scroll-snap-type: x proximity;
-  padding-bottom: var(--s-1);
+  scrollbar-width: none;
+}
+
+.account-strip::-webkit-scrollbar {
+  display: none;
 }
 
 .account-card {

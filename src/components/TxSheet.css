@@ -144,7 +144,12 @@
   display: flex;
   gap: var(--s-2);
   overflow-x: auto;
-  padding-bottom: var(--s-1);
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+
+.sheet__chips::-webkit-scrollbar {
+  display: none;
 }
 
 .sheet__chip {
